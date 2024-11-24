@@ -273,29 +273,22 @@ class MsField:
         return neigh_count
 
     def reveal(self, x, y):
-
         if not self.field[x][y].is_visible and not self.field[x][y].is_flagged:
-
             self.field[x][y].reveal()
 
             if self.field[x][y].is_mine:
-
                 self.game_over = True
+                # This will trigger the pop-up for losing
+                return  # Early return to avoid further processing
 
             else:
-
                 if self.field[x][y].get_neighbors == 0:
-
                     for ay in range(-1, 2):
                         for ax in range(-1, 2):
-
                             if ax != 0 or ay != 0:
-
                                 fx = ax + x
                                 fy = ay + y
-
                                 if 0 <= fx < self.field_size[0] and 0 <= fy < self.field_size[1]:
-
                                     self.reveal(fx, fy)
 
 
@@ -369,55 +362,48 @@ class MsGui:
         self.update_win()
 
         return self.master
- 
+
     def on_difficulty_change(self, new_difficulty):
-    # Get the new field size and mine density based on the selected difficulty
-     field_size, mine_density = self.difficulty_settings[new_difficulty]
-    
-    # Clear the existing canvas
-     self.canvas.delete("all")
+        # Get the new field size and mine density based on the selected difficulty
+        field_size, mine_density = self.difficulty_settings[new_difficulty]
 
-    # Update the field with new settings
-     self.field.new_game(field_size=field_size, mine_density=mine_density)
-    
-    # Resize the canvas
-     self.canvas.config(width=self.field.field_size[0] * self.screen_scale,
-                       height=self.field.field_size[1] * self.screen_scale)
+        # Clear the existing canvas
+        self.canvas.delete("all")
 
-    # Redraw the cells
-     self._draw_cells()
-     self.update_win()
-        
+        # Update the field with new settings
+        self.field.new_game(field_size=field_size, mine_density=mine_density)
+
+        # Resize the canvas
+        self.canvas.config(width=self.field.field_size[0] * self.screen_scale,
+                           height=self.field.field_size[1] * self.screen_scale)
+
+        # Redraw the cells
+        self._draw_cells()
+        self.update_win()
+
     def _new_game(self):
         self.on_difficulty_change(self.difficulty_var.get())  # Restart game with current difficulty
 
     def _input_reveal(self, event):
-
         if self.field.game_over is False and self.field.win is False:
-
             x = int(event.x / self.screen_scale)
             y = int(event.y / self.screen_scale)
-            self.field.reveal(x, y)
-            self.update_win(self.field.game_over, self.field.win)
+            self.field .reveal(x, y)
+            self.update_win(self.field.game_over, self.field.win)  # Call update_win after revealing
 
     def _input_flag(self, event):
-
         if self.field.game_over is False and self.field.win is False:
-
             x = int(event.x / self.screen_scale)
             y = int(event.y / self.screen_scale)
 
             if not self.field.field[x][y].is_visible:
-
                 self.field.field[x][y].set_flag()
                 self.mine_counter_tv.set(self.field.mine_num)
                 self.update_win(self.field.game_over, self.field.win)
 
     def _draw_cells(self):
-
-        for y in range(self.field.field_size[0]):
-            for x in range(self.field.field_size[1]):
-
+        for y in range(self.field.field_size[1]):
+            for x in range(self.field.field_size[0]):
                 self.canvas.create_line(0, y * self.screen_scale,
                                         self.field.field_size[0] * self.screen_scale, y * self.screen_scale,
                                         fill='#003D99')
@@ -426,7 +412,6 @@ class MsGui:
                                         fill='#003D99')
 
     def update_win(self, game_over=False, win=False):
-
         self.flags.clear()
 
         if game_over is False and win is False:
@@ -434,45 +419,38 @@ class MsGui:
 
         for y in range(self.field.field_size[1]):
             for x in range(self.field.field_size[0]):
-
                 if game_over is False and win is False:
-
                     if self.field.field[x][y].is_visible:
-
                         self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
                                                      (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
                                                      fill="#003D99")
 
                         if self.field.field[x][y].get_neighbors != 0:
-
                             self.canvas.create_text((x * self.screen_scale) + 15, ((y + 1) * self.screen_scale) - 15,
                                                     font=('Consolas', 20),
                                                     text=str(self.field.field[x][y].get_neighbors),
                                                     fill="#FFFFFF")
 
                     if self.field.field[x][y].is_flagged:
+                        # Draw a circle for the flag
+                        self.canvas.create_oval(x * self.screen_scale + 5, y * self.screen_scale + 5,
+                                                (x + 1) * self.screen_scale - 5, (y + 1) * self.screen_scale - 5,
+                                                fill="#FFFF00")  # Yellow circle for flag
 
-                        self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
-                                                     (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
-                                                     fill="#969696")
-                        
                 elif game_over is True:
-
                     if self.field.field[x][y].is_mine:
-
                         if not self.field.field[x][y].is_flagged:
-
-                            self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
-                                                         (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
-                                                         fill="#960000")
+                            # Draw a circle for the mine
+                            self.canvas.create_oval(x * self.screen_scale + 5, y * self.screen_scale + 5,
+                                                    (x + 1) * self.screen_scale - 5, (y + 1) * self.screen_scale - 5,
+                                                    fill="#960000")  # Red circle for mine
                         else:
+                            # Draw a circle for the flagged mine
+                            self.canvas.create_oval(x * self.screen_scale + 5, y * self.screen_scale + 5,
+                                                    (x + 1) * self.screen_scale - 5, (y + 1) * self.screen_scale - 5,
+                                                    fill="#FFFF00")  # Yellow circle for flagged mine
 
-                            self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
-                                                         (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
-                                                         fill="#960000")
-                            
                 elif win is True:
-
                     self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
                                                  (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
                                                  fill="#003D99")
@@ -484,31 +462,30 @@ class MsGui:
                                                 fill="#FFFFFF")
 
                     if self.field.field[x][y].is_flagged:
+                        # Draw a circle for the flag
+                        self.canvas.create_oval(x * self.screen_scale + 5, y * self.screen_scale + 5,
+                                                (x + 1) * self.screen_scale - 5, (y + 1) * self.screen_scale - 5,
+                                                fill="#FFFF00")  # Yellow circle for flag
 
-                        self.canvas.create_rectangle(x * self.screen_scale, y * self.screen_scale,
-                                                     (x + 1) * self.screen_scale, (y + 1) * self.screen_scale,
-                                                     fill="#969696")
-                        
         if win is False:
             counter = 0
-
             for row in self.field.field:
                 for cell in row:
                     if cell.is_mine and cell.is_flagged:
                         counter += 1
 
-
             if counter == self.field.mine_num:
                 print('Win')
                 self.field.win = True
+                messagebox.showinfo("Congratulations !", "You won!")  # Show win message
                 self.update_win(False, True)
-            
+
+        elif game_over is True:
+            messagebox.showinfo("Game Over", "You lost!")  # Show lose message
+            self.update_win(True, False)  # Update the display after losing
+
         self.mine_counter_tv.set(self.field.mine_num - len(self.flags))
         self._draw_cells()
-        
-        
-        
-       
 
 
 if __name__ == "__main__":
